@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web
+  namespace: homework
+  labels:
+    app: web
+spec:
+  initContainers:
+  - name: web-app-init
+    image: busybox:1.35.0
+    command: ['sh', '-c', 'wget -O- https://tinyurl.com/otus-k8s-intro | sed "s|/app/index.html|/init/index.html|g" |sh']
+    volumeMounts:
+    - name: volume
+      mountPath: /init
+  containers:
+  - name: web
+    image: nvtikhomirov/openresty:otus-2024
+    ports:
+    - containerPort: 8000
+      name: http
+    volumeMounts:
+    - name: volume
+      mountPath: /homework
+    lifecycle:
+      preStop:
+        exec:
+          command: ["rm", "-rf", "/homework/index.html"]
+  volumes:
+  - name: volume
+    emptyDir: {}
