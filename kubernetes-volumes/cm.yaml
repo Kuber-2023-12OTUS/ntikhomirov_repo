@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-cm
+  namespace: homework
+data:
+  app.cong: |
+    PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+    CURRENCY_SERVICE_ADDR: "currencyservice:7000"
+    CART_SERVICE_ADDR: "cartservice:7070"
+    RECOMMENDATION_SERVICE_ADDR: "recommendationservice:8080"
+    CHECKOUT_SERVICE_ADDR: "checkoutservice:5050"
+    SHIPPING_SERVICE_ADDR: "shippingservice:50051"
+    AD_SERVICE_ADDR: "adservice:9555"
+  TEST: TEST
+  nginx.conf: |
+    server {
+        listen 8000 default_server;
+        listen [::]:8000 default_server;
+
+        root /homework;
+
+        index index.html index.htm;
+
+        location / {
+            content_by_lua '
+                ngx.header["Content-type"] = "text/html; charset=utf-8"
+
+                index = "/homework/index.html"
+                local status = io.open(index, "r")
+
+                if status ~= nil then
+                    html = status:read("*all")
+                    ngx.say(html)
+                else
+                    ngx.say("Возникла проблема с доступностью файла index.html. Вместо него произошла обработка с использованием языка программирования Lua.")
+                end
+                ngx.status = 200
+                ngx.exit(200)
+            ';
+        }
+
+        location /homepage {
+             content_by_lua '
+                 ngx.header["Content-type"] = "text/html; charset=utf-8"
+                 ngx.say("Отработало правило rewrite - index.html на http://homework.otus/homepage!")
+                 ngx.status = 200
+                 ngx.exit(200)
+            ';
+        }
+
+        location /homepage/conf/ {
+             content_by_lua '
+                 ngx.header["Content-type"] = "text/html; charset=utf-8"
+
+                 index = "/homework/conf/index.html"
+                 local status = io.open(index, "r")
+
+                 if status ~= nil then
+                     html = status:read("*all")
+                     ngx.say(html)
+                 else
+                     ngx.say("Возникла проблема с доступностью файла index.html. Вместо него произошла обработка с использованием языка программирования Lua.")
+                 end
+                 ngx.status = 200
+                 ngx.exit(200)
+             ';
+        }
+
+     }

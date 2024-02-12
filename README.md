@@ -1,4 +1,4 @@
-# ДЗ kubernetes-networks
+# ДЗ Volumes, StorageClass, PV, PVC
 
 
 ***Работы производим на WSL-Ubuntu***
@@ -20,30 +20,21 @@
 ## Выполнения ДЗ
 1) Создаем рабочий namespace - kubectl apply -f ./namespace.yaml
 
-2) Создаем configMap - kubectl apply -f ./config-nginx.yml
+2) Создаем configMap - kubectl apply -f ./cm.yaml
+
+3) Создаем StorageClass - kubectl apply -f ./storageClass.yaml
+
+4) Создаем PersistentVolumeClaim - kubectl apply -f ./pvc.yaml
 
 3) Запускаем приложение - kubectl apply -f ./deployment.yaml
 
 4) Ожидаем окончания запуска - kubectl get pods -n homework
-
+http://homework.otus/homepage/,
 5) Устанавливаем service и ingress - kubectl apply -f ./service.yaml, kubectl apply -f ./ingress.yaml
 
-6) Производим проверку через браузер страници - http://homework.otus/
+6) Производим проверку через браузер страниц - http://homework.otus/, http://homework.otus/homepage/, http://homework.otus/homepage/conf/index.html
 
 
 ## Выполение задания со *
-***Доработать манифест ingress.yaml, описав в нем rewrite-правила
-так, чтобы обращение по адресу http://homework.otus/index.html
-форвардилось на http://homework.otus/homepage***
 
-Так как задача со звездочкой предназначена для создания корректного редиректа в ingress и условие не подходящее для моего образа (все запросы всегда идут на index.html), немного корректирую задачу отходя от плана работы
-
-1) Добавляем в configMap location /homepage/ который обрабатывает lua, выдавая определенное сообщение
-
-2) Подгружаем данный конфиг и проверяем, что url http://homework.otus/homepage - Отработало правило rewrite - index.html на location /homepage!
-
-3) Добавляем правила rewrite в ingress
-
-4) Подгружаем новыю конфигурационный файл ingress
-
-5) Проверяем, что адрес http://homework.otus/index.html перестал отдавать страницу статистики и отображает сообщаение из 2 пункта.
+Создаем собственный - StorageClass (my-storageclass)
