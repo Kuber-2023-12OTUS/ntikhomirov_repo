@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: homework
+  labels:
+    app: web
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      initContainers:
+      - name: web-app-init
+        image: busybox:1.36.1
+        command: ["sh", "-c", 'wget -O- https://tinyurl.com/otus-k8s-intro --no-check-certificate | sed "s|/app/index.html|/init/index.html|g" |sh']
+        volumeMounts:
+        - name: volume
+          mountPath: /init
+      containers:
+      - name: web
+        image: nvtikhomirov/openresty:otus-2024
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: volume
+          mountPath: /homework
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/
+          readOnly: true
+#        lifecycle:
+#          preStop:
+#            exec:
+#              command: ["rm", "-rf", "/homework/index.html"]
+              # These containers are run during pod initialization
+#        readinessProbe:
+#          httpGet:
+#            path: /index.html
+#            port: 8000
+#          initialDelaySeconds: 5
+#          periodSeconds: 5
+      volumes:
+      - name: volume
+        emptyDir: {}
+      - name: nginx-config-volume
+        configMap:
+          name: configmap-nginx
+          items:
+          - key: nginx.conf
+            path: default.conf
+#  strategy:
+#    type: RollingUpdate
+#    rollingUpdate:
+#      maxUnavailable: 1
+#      maxSurge: 0
