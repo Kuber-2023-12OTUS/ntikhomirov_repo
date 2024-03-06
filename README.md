@@ -56,3 +56,5 @@
 2) При помощи lua получаем token из /var/run/secrets/kubernetes.io/serviceaccount/token
 
 3) Добавляем соответсвующий заголовок аутентификации в настройке прокси
+
+4) Проверка - http://homework.otus/metrics
