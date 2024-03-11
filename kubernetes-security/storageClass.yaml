@@ -1,0 +1,10 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: my-storageclass
+  namespace: homework
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Retain
+parameters:
+  type: fast
+  size: 100Mi
