@@ -44,7 +44,7 @@ docker run --rm --net=host -v "/home/ntikhomirov:/home/ntikhomirov" -v "${HOME}/
 
 8) Заполняем файл параметров для среды prod - values-prod.yaml - helm install homework-prod ./homework/ -f ./homework/values-prod.yaml
 
-9) Производим проверку - http://dev.homework.otus/metrics
+9) Производим проверку - http://prod.homework.otus/metrics
 
 10) Производим проверку зависимостей указаных Chart.yaml - grafana (kubectl get pod)
 
