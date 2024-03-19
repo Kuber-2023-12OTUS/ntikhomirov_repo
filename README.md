@@ -1,4 +1,4 @@
-# Основы безопасности в Kubernetes ДЗ#5
+# Шаблонизация манифестов. Helm и его аналоги (Jsonnet, Kustomize) // ДЗ#6
 
 
 ***Работы производим на WSL-Ubuntu***
@@ -17,44 +17,43 @@
 
 6) Включаем metrics-service - minikube addons enable metrics-server
 
-7) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus
+7) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus prod.homework.otus dev.homework.otus
 
 8) Запускаем тунель - minikube tunnel
+
+9) Для работы с helmfile создадим исполняемый файл и положем его в /usr/local/bin/helmfile
+``` helmfile
+#!/bin/sh
+docker run --rm --net=host -v "/home/ntikhomirov:/home/ntikhomirov" -v "${HOME}/.kube:/helm/.kube" -v "${HOME}/.config/helm:/helm/.config/helm" -v "${PWD}:/wd" --workdir /wd ghcr.io/helmfile/helmfile:v0.162.0 helmfile "$@"
+```
 
 ## Выполнения ДЗ
 1) Создаем рабочий namespace - kubectl apply -f ./namespace.yaml
 
-2) Создаем: ServiceAccount, ClusterRole, ClusterRoleBinding - kubectl apply -f ServiceAccount.yml
+2) Создаем новый шаблон для chart - helm create homework
 
-3) Создаем configMap - kubectl apply -f ./cm.yaml
+3) Перемещаем в папку homework/templates файлы из ДЗ#5
 
-4) Создаем StorageClass - kubectl apply -f ./storageClass.yaml
+4) Параметризируем файлы полученых templates
 
-5) Создаем PersistentVolumeClaim - kubectl apply -f ./pvc.yaml
+5) Заполняем файл параметров запускаемы по умолчанию - values.yaml
 
-6) Запускаем приложение - kubectl apply -f ./deployment.yaml
+6) Запускаем приложение в среде dev - helm install homework-dev ./homework/
 
-7) Ожидаем окончания запуска - kubectl get pods -n homework
+7) Производим проверку - http://dev.homework.otus/metrics
 
-8) Устанавливаем service и ingress - kubectl apply -f ./service.yaml, kubectl apply -f ./ingress.yaml
+8) Заполняем файл параметров для среды prod - values-prod.yaml - helm install homework-prod ./homework/ -f ./homework/values-prod.yaml
 
-9) Производим проверку через браузер страниц - http://homework.otus/, http://homework.otus/metrics
+9) Производим проверку - http://dev.homework.otus/metrics
 
-10) Создаем ServiceAccount cd - kubectl apply -f ServiceAccount-cd.yml
+10) Производим проверку зависимостей указаных Chart.yaml - grafana (kubectl get pod)
 
-11) Получаем ca.cert -  kubectl -n homework get secret/cd-token -o jsonpath='{.data.ca\.crt}'
+11) Производим удаление: helm uninstall homework-dev (homework-prod)
 
-12) Получаем токен - kubectl -n homework get secret/cd-token -o jsonpath='{.data.token}' | base64 --decode
+12) Создаем файл helmfile.yaml
 
-13) На основание шаблона создаем tmpKubeconfig создаем config
+13) Запускаем helmfile apply
 
-14) Генерация токена на 24 часа -  kubectl create token cd --namespace homework --duration 24h > token
+14) Проверяем - helmfile list
 
-## Выполение задания со *
-1) Добавление location /metrics c настройкой реверс прокси на сервис https://metric-servers.kube-system/metrics
-
-2) При помощи lua получаем token из /var/run/secrets/kubernetes.io/serviceaccount/token
-
-3) Добавляем соответсвующий заголовок аутентификации в настройке прокси
-
-4) Проверка - http://homework.otus/metrics
+15) kubectl get pod -n kafka-prod (kafka-dev)
