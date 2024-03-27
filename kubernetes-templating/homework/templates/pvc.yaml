@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.name }}-app-pvc-{{ .Values.environment.name | default "test" }}
+  namespace: {{ .Values.namespace }}
+spec:
+  storageClassName: {{ .Values.name }}-storageclass-{{ .Values.environment.name | default "test" }}
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Mi

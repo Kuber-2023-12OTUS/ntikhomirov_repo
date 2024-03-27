@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-{{ .Values.environment.name | default "test" }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port | default "8080" }}
+      targetPort: {{ .Values.service.targetPort | default "8080" }}
+...

@@ -17,9 +17,12 @@
 
 6) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus
 
+
 7) Запускаем тунель - minikube tunnel
 
+
 8) Устанавливаем framework operator-sdk (Версия v1.32.0)
+
 
 9) Создаем виртуальное окружение для python и настраиваем его в сответствии с требованиями для operator-sdk + ansible
 
@@ -85,3 +88,5 @@ make deploy IMG=nvtikhomirov/k8s-operator-otus-homework:v0.0.14
 ## Часта используемые команы
 
 kubectl logs otus-controller-manager-59d965b46f-cd96h -n otus-system -f
+
+

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+    spec:
+      initContainers:
+      - name: {{ .Values.name }}-init-{{ .Values.environment.name | default "test" }}
+        image: busybox:1.36.1
+        command: ["sh", "-c", 'wget -O- https://tinyurl.com/otus-k8s-intro --no-check-certificate | sed "s|/app/index.html|/init/index.html|g" |sh']
+        volumeMounts:
+        - name: volume
+          mountPath: /init
+      containers:
+      - name: {{ .Values.name }}-{{ .Values.environment.name | default "test" }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: volume
+          mountPath: /homework
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/
+          readOnly: true
+        - name: test-app-cong
+          mountPath: /homework/conf
+          readOnly: true
+        lifecycle:
+          preStop:
+            exec:
+              command: ["rm", "-rf", "/homework/index.html"]
+              # These containers are run during pod initialization
+        readinessProbe:
+          httpGet:
+            path: /index.html
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      serviceAccountName: monitoring-{{ .Values.environment.name | default "test" }}
+      volumes:
+      - name: volume
+        emptyDir: {}
+      - name: nginx-config-volume
+        configMap:
+          name: {{ .Values.name }}-cm-{{ .Values.environment.name | default "test" }}
+          items:
+          - key: nginx.conf
+            path: default.conf
+      - name: test-app-cong
+        configMap:
+          name: {{ .Values.name }}-cm-{{ .Values.environment.name | default "test" }}
+          items:
+          - key: app.cong
+            path: index.html
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
