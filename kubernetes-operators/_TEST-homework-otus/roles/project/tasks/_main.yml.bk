@@ -1,0 +1,12 @@
+---
+# tasks file for Project
+- name: Create namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "test-namespace"
+        labels:
+          app.kubernetes.io/managed-by: "project-operator"

@@ -1,4 +1,4 @@
-# Основы безопасности в Kubernetes ДЗ#5
+# Создание собственного CRD ДЗ#7
 
 
 ***Работы производим на WSL-Ubuntu***
@@ -15,46 +15,73 @@
 
 5) Включаем панель для удобства - minikube addons enable dashboard
 
-6) Включаем metrics-service - minikube addons enable metrics-server
+6) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus
 
-7) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus
+7) Запускаем тунель - minikube tunnel
 
-8) Запускаем тунель - minikube tunnel
+8) Устанавливаем framework operator-sdk (Версия v1.32.0)
 
-## Выполнения ДЗ
-1) Создаем рабочий namespace - kubectl apply -f ./namespace.yaml
+9) Создаем виртуальное окружение для python и настраиваем его в сответствии с требованиями для operator-sdk + ansible
 
-2) Создаем: ServiceAccount, ClusterRole, ClusterRoleBinding - kubectl apply -f ServiceAccount.yml
+## Выполнения ДЗ (*)
 
-3) Создаем configMap - kubectl apply -f ./cm.yaml
+1) Создаем требуемые манифестa для ДЗ
 
-4) Создаем StorageClass - kubectl apply -f ./storageClass.yaml
+2) Устанавливаем и проверяем работаспособность (как с максимальными, так и с минимальными правами)
 
-5) Создаем PersistentVolumeClaim - kubectl apply -f ./pvc.yaml
+## Выполнения ДЗ **
+1) Создаем operator otus.homework
+```bash
+mkdir -p local
+cd local
+operator-sdk init --plugins=ansible --domain=local
+operator-sdk create api --group otus.homework --version v1 --kind MySQL --generate-role
+```
+2) Создание CRD
 
-6) Запускаем приложение - kubectl apply -f ./deployment.yaml
+  - **Меняем условие домашнего задания** -  Объект уровня ***Namespace*** на ***Cluster*** (scope: Namespaced - scope: Cluster). Для дальнейшего развития данного оператора и переиспользования его как шаблона.
+  - Добавляем код дз в сгенерированый шаблон(kubernetes-operators\local\config\crd\bases\otus.homework.local_mysqls.yaml):
+```yaml
+    image:
+      description: 'Определяет docker-образ для создания'
+      type: string
+    database:
+      description: 'Имя базы данных'
+      type: string
+    password:
+      description: 'Пароль от БД'
+      type: string
+    storage_size:
+      description: 'Размер хранилища под БД'
+      type: string
+```  
 
-7) Ожидаем окончания запуска - kubectl get pods -n homework
+3) Создаем role ansible - mysql (kubernetes-operators\local\roles\mysql)
+  - Создание namespace
+  - Создание pv и pvc
+  - Создание SA, ClusterRole и ClusterRoleBinding
+  - Создаybt Deploy
 
-8) Устанавливаем service и ingress - kubectl apply -f ./service.yaml, kubectl apply -f ./ingress.yaml
+4) Модифицируем шаблон crd (kubernetes-operators\local\config\crd\bases\otus.homework.local_mysqls.yaml)
 
-9) Производим проверку через браузер страниц - http://homework.otus/, http://homework.otus/metrics
+5) Модифицуруем шаблон role.yml (kubernetes-operators\local\config\rbac\role.yaml)
 
-10) Создаем ServiceAccount cd - kubectl apply -f ServiceAccount-cd.yml
+6) Собираем образ, пушим в репозиторий, deploy
 
-11) Получаем ca.cert -  kubectl -n homework get secret/cd-token -o jsonpath='{.data.ca\.crt}'
+```bash
+make docker-build IMG=nvtikhomirov/k8s-operator-otus-homework:v0.0.14
+make docker-push IMG=nvtikhomirov/k8s-operator-otus-homework:v0.0.14
+make deploy IMG=nvtikhomirov/k8s-operator-otus-homework:v0.0.14
+```
 
-12) Получаем токен - kubectl -n homework get secret/cd-token -o jsonpath='{.data.token}' | base64 --decode
+7) Применяем манифест и примера - kubectl apply -f ./config/samples/otus.homework_v1_mysql.yaml
 
-13) На основание шаблона создаем tmpKubeconfig создаем config
+8) Производим отладку оператора (если требуется)
 
-14) Генерация токена на 24 часа -  kubectl create token cd --namespace homework --duration 24h > token
+## Научился
+1) Создавать собственные CRD и operator(ansible)
+2) Отладка оператора
 
-## Выполение задания со *
-1) Добавление location /metrics c настройкой реверс прокси на сервис https://metric-servers.kube-system/metrics
+## Часта используемые команы
 
-2) При помощи lua получаем token из /var/run/secrets/kubernetes.io/serviceaccount/token
-
-3) Добавляем соответсвующий заголовок аутентификации в настройке прокси
-
-4) Проверка - http://homework.otus/metrics
+kubectl logs otus-controller-manager-59d965b46f-cd96h -n otus-system -f

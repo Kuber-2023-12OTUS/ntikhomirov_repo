@@ -1,0 +1,25 @@
+apiVersion: ops.homework.otus/v1alpha1
+kind: Project
+metadata:
+  name: myapp
+spec:
+  members:
+    - v.pupkin
+    - i.ivanov
+  environments:
+    - name: prod
+      resource:
+        request:
+          cpu: 1
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 1Gi
+    - name: stage
+      resource:
+        request:
+          cpu: 1
+          memory: 1Gi
+        limits:
+          cpu: 1
+          memory: 1Gi

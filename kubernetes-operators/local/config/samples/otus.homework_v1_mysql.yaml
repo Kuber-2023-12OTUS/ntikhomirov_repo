@@ -1,0 +1,26 @@
+apiVersion: otus.homework.local/v1
+kind: MySQL
+metadata:
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/instance: mysql-sample
+    app.kubernetes.io/part-of: local
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: local
+  name: mysql-sample
+spec:
+  members:
+    - mysq-edit
+  environments:
+    - name: prod
+      properties:
+        image: mysql
+        database: prod
+        password: Password
+        storage_size: 1Gi
+    - name: stage
+      properties:
+        image: mysql
+        database: prod
+        password: Password
+        storage_size: 1Gi

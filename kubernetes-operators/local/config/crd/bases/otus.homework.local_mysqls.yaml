@@ -1,0 +1,53 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: mysqls.otus.homework.local
+spec:
+  group: otus.homework.local
+  names:
+    kind: MySQL
+    listKind: MySQLList
+    plural: mysqls
+    singular: mysql
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: MySQL is the Schema for the mysqls API
+        properties:
+          apiVersion:
+            description: ''
+            type: string
+          kind:
+            description: ''
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec defines the desired state of MySQL
+            type: object
+            properties:
+              image:
+                description: 'Определяет docker-образ для создания'
+                type: string
+              database:
+                description: 'Имя базы данных'
+                type: string
+              password:
+                description: 'Пароль от БД'
+                type: string
+              storage_size:
+                description: 'Размер хранилища под БД'
+                type: string
+            x-kubernetes-preserve-unknown-fields: true
+          status:
+            description: Status defines the observed state of MySQL
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
