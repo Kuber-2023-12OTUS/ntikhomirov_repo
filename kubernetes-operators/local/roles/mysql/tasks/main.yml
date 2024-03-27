@@ -1,0 +1,132 @@
+---
+# tasks file for Project
+- name: Create namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ ansible_operator_meta.name }}-{{ item.name }}"
+        labels:
+          app.kubernetes.io/managed-by: "mysql-operator"
+  loop: "{{ environments }}"
+
+- name: Create PersistentVolume
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolume
+      metadata:
+        name: "pv-{{ ansible_operator_meta.name }}-{{ item.name }}"
+        namespace: "{{ ansible_operator_meta.name }}-{{ item.name }}"
+        labels:
+          app.kubernetes.io/managed-by: "mysql-operator"
+      spec:
+        capacity:
+          storage: "{{ item.properties.storage_size }}"
+        accessModes:
+          - ReadWriteOnce
+        persistentVolumeReclaimPolicy: Retain
+        storageClassName: standard
+        hostPath:
+          path: "/data/{{ ansible_operator_meta.name }}-{{ item.name }}"
+  loop: "{{ environments }}"
+
+- name: Create PersistentVolumeClaim
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "pvc-{{ ansible_operator_meta.name }}-{{ item.name }}"
+        namespace: "{{ ansible_operator_meta.name }}-{{ item.name }}"
+        labels:
+          app.kubernetes.io/managed-by: "mysql-operator"
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: "{{ item.properties.storage_size }}"
+  loop: "{{ environments }}"
+
+- name: Create ServiceAccount
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: "{{ item[1] }}"
+        namespace: "{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+  with_nested:
+    - "{{ environments }}"
+    - "{{ members }}"
+
+- name: Create a member role building
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ item[1] }}"
+        namespace: "{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+        labels:
+          app.kubernetes.io/managed-by: "project-operator"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: edit
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ item[1] }}"
+  with_nested:
+    - "{{ environments }}"
+    - "{{ members }}"
+
+- name: Deploy Mysql
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: mysql-deployment
+        namespace: "{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+        labels:
+          app: "lable-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: "lable-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+        template:
+          metadata:
+            labels:
+              app: "lable-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+          spec:
+            volumes:
+              - name: "mysql-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+                persistentVolumeClaim:
+                  claimName: "pvc-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+            containers:
+              - name: "mysql-db-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+                image: "{{ item[0].properties.image }}"
+                env:
+                  - name: MYSQL_DATABASE
+                    value: "{{ item[0].properties.database }}"
+                  - name: MYSQL_PASSWORD
+                    value: "{{ item[0].properties.password }}"
+                  - name: MYSQL_USER
+                    value: "{{ item[0].properties.database }}"
+                volumeMounts:
+                  - mountPath: "/var/lib/mysql"
+                    name: "mysql-{{ ansible_operator_meta.name }}-{{ item[0].name }}"
+            serviceAccountName: "{{ item[1] }}"
+  with_nested:
+    - "{{ environments }}"
+    - "{{ members }}"
