@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: web-monitoring
+  labels:
+    team: frontend
+spec:
+  selector:
+    matchLabels:
+      app: homework-service
+  endpoints:
+    - port: nginx-prometheus-exporter
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: custom-monitoring
+  labels:
+    team: frontend
+spec:
+  selector:
+    matchLabels:
+      app: homework-service
+  endpoints:
+    - port: custom-exporter
+      path: /prometheus/

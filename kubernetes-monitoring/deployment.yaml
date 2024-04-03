@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homework-service
+  labels:
+    app: homework-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homework-service
+  template:
+    metadata:
+      name: homework-service
+      labels:
+        app: homework-service
+    spec:
+      containers:
+      - name: homework-service
+        image: nvtikhomirov/openresty-prometheus:v0.0.3
+        ports:
+        - name: custom-exporter
+          containerPort: 8000
+      - name: nginx-prometheus-exporter
+        image: nginx/nginx-prometheus-exporter:latest
+        args:
+          - "--nginx.scrape-uri=http://homework-service:8000/metrics/"
+        ports:
+        - name: metrics
+          containerPort: 9113
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
