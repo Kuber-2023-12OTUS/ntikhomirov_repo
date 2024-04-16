@@ -30,6 +30,10 @@
 
 5) Удаляем кластер - terraform destroy
 
+## Grafana
+![image](kubernetes-logging/grafana-img/1.grafana.png)
+![image](kubernetes-logging/grafana-img/2.grafana.png)
+
 ### Полезные команды
 - Вывод списка кластеров и их статус - yc k8s cluster list
 - Вывод информации о кластере - yc k8s cluster get homework-otus
@@ -38,11 +42,5 @@
 - Переконфигурация kubectl config
   - yc managed-kubernetes cluster list
   - yc managed-kubernetes cluster get-credentials k8s-cluster-zdll5iec --external --force
-
-### Инсталяция loki
-- helm upgrade --install loki --namespace=loki-stack grafana/loki-stack
-- helm repo update
-- kubectl create ns loki-stack
-- helm upgrade --values=loki-value.yaml --install loki --namespace=loki-stack grafana/loki-stack --set grafana.enabled=true
 - Пароль от админа grafana - kubectl get secret --namespace loki-stack loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 - Проброс портов - kubectl port-forward --namespace loki-stack service/loki-grafana 3000:80
