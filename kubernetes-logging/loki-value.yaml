@@ -1,0 +1,32 @@
+loki:
+  tolerations:
+    - key: infra
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  storage:
+    bucketNames:
+      chunks: homework.otus.ntikhomirov.2024
+      admin: s2a
+    type: 's3'
+    s3:
+      endpoint: storage.yandexcloud.net
+      secretAccessKey: YCOECFb95-gAcOK6Rzdt0khgDyJJKZns7NH-So52
+      accessKeyId: YCAJExTrLB1a-fKcGRxZzd0J_
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+
+promtail:
+  tolerations:
+    - key: "node-role"
+      operator: "Equal"
+      value: "infra"
+      effect: "NoSchedule"
+
+grafana:
+  tolerations:
+    - key: infra
+      operator: Equal
+      value: "true"
+      effect: NoSchedule

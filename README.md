@@ -1,81 +1,46 @@
-# Мониторинг компонентов кластера и приложений, работающих в нем ДЗ#8
+# Сервисы централизованного логирования для Kubernetes ДЗ#9
 
 
-***Работы производим на WSL-Ubuntu***
+**Работы производим YC**
 
 
 ## Подготовка окружения к ДЗ
-1) Очищаем minikube от предыдущих занятий - minikube delete
+1) Скачиваем и устанавливаем terraform c зеркала яндекс - https://hashicorp-releases.yandexcloud.net/terraform/
 
-2) Запустить - minikube start
+2) Устанавливаем необходимые модули для работы terraform c yc
 
-3) Устанавливаем addon ingress - minikube addons enable ingress
+3) Устанавливаем yc для работы с cloud через cli
 
-4) Проверяем корректность активированного ingress - kubectl get pods -n ingress-nginx
+4) Настраиваем terraform для домашнего задания
 
-5) В хостовую машину добавляем dns запись вида (в файл hosts) - 127.0.0.1 kubernetes.docker.internal homework.otus
+5) Производим инициализацию и запуск кластера - terraform init; terraform plan; terraform apply
 
-6) Запускаем тунель - minikube tunnel
+6) Производим конфигурация Kubectl
 
+## Выполнение домашнего задания
+1) Создаем храненилище S3 для ДЗ
 
-## Выполнения ДЗ
+2) Добаляем репозиторий для helm
+  - helm upgrade --install loki --namespace=loki-stack grafana/loki-stack
+  - helm repo update
 
-1) Устанавливаем prometheus-operator - helm install my-release oci://registry-1.docker.io/bitnamicharts/kube-prometheus
+3) Устанавливаем требуемое ПО для ДЗ - helm upgrade --values=loki-value.yaml --install loki --namespace=loki-stack grafana/loki-stack --set grafana.enabled=true   
 
-2) Создаем docker image
-    - включаем модуль stab_status  
-    ```
-    location /metrics {
-        stub_status on;
-    }
-    ```
-    - **подключаем модуль/библиотеки prometheus для lua**
-    ```
-    lua_package_path "/usr/local/openresty/nginx/lualib/lib/?.lua;;";
-    lua_shared_dict prometheus_metrics 10M;
+4) Делаем проброс портов, убеждаемся что логи есть и их можно вывести в grafana
 
-    init_worker_by_lua_block {
-        prometheus = require("prometheus").init("prometheus_metrics")
-        metric_requests = prometheus:counter(
-        "nginx_http_requests_total", "Number of HTTP requests", {"host", "status"})
-        metric_latency = prometheus:histogram(
-        "nginx_http_request_duration_seconds", "HTTP request latency", {"host"})
-        metric_connections = prometheus:gauge(
-        "nginx_http_connections", "Number of HTTP connections", {"state"})
-    }
+5) Удаляем кластер - terraform destroy
 
-    location /prometheus {
-        #access_log off;
+## Grafana
+![image](kubernetes-logging/grafana-img/1.grafana.png)
+![image](kubernetes-logging/grafana-img/2.grafana.png)
 
-        content_by_lua '
-            metric_connections:set(ngx.var.connections_reading, {"reading"})
-            metric_connections:set(ngx.var.connections_waiting, {"waiting"})
-            metric_connections:set(ngx.var.connections_writing, {"writing"})
-            prometheus:collect()
-        ';
-    }
+### Полезные команды
+- Вывод списка кластеров и их статус - yc k8s cluster list
+- Вывод информации о кластере - yc k8s cluster get homework-otus
 
-    ```  
-    - Собираем образ и отправляем в публичный репозиторий -
-    ```bash
-    docker build -t nvtikhomirov/openresty-prometheus:v0.0.3 .
-    docker push nvtikhomirov/openresty-prometheus:v0.0.3    
-    ```
-
-3) Создаем файл deployment.yaml (nginx-prometheus-exporter собирает метрики с /metrics, готовые метрики /prometheus)
-
-4) Создаем service и servicemonitor.yaml
-
-5) Для удобства создаем ingress:
-
-    - /metrics (/prometheus-exporter) для работы с nginx-prometheus-exporter
-
-    - / - вывод prometheus
-
-    - /prometheus - метрики сгенерированые lua
-
-6) Проверка
-
-    - переходим в Targets, находим ранее созданые точки мониторинга: serviceMonitor/default/custom-monitoring, serviceMonitor/default/web-monitoring (статус UP)
-
-    - производим выборочную проверку метрик nginx
+- Создание временного токена - yc iam create-token
+- Переконфигурация kubectl config
+  - yc managed-kubernetes cluster list
+  - yc managed-kubernetes cluster get-credentials k8s-cluster-zdll5iec --external --force
+- Пароль от админа grafana - kubectl get secret --namespace loki-stack loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+- Проброс портов - kubectl port-forward --namespace loki-stack service/loki-grafana 3000:80
