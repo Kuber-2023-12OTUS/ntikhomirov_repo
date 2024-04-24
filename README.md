@@ -43,7 +43,7 @@
 ![image](kubernetes-csi/img/output-txt-volume.png)
 
 ### Полезные команды
-- Вывод списка кластеров и их статус -
+- Вывод списка кластеров и их статус - yc k8s cluster list
 - Вывод информации о кластере - yc k8s cluster get homework-otus
 
 - Создание временного токена (для подключения terraform к yc) - yc iam create-token
