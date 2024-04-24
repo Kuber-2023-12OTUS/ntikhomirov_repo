@@ -1,8 +1,6 @@
-# Сервисы централизованного логирования для Kubernetes ДЗ#9
-
+# Установка и использование CSI драйвера
 
 **Работы производим YC**
-
 
 ## Подготовка окружения к ДЗ
 1) Скачиваем и устанавливаем terraform c зеркала яндекс - https://hashicorp-releases.yandexcloud.net/terraform/
@@ -17,30 +15,39 @@
 
 6) Производим конфигурация Kubectl
 
+
 ## Выполнение домашнего задания
-1) Создаем храненилище S3 для ДЗ
+>Всю конфигурацию для ДЗ производим в соответствии с рекомендациями от YC
 
-2) Добаляем репозиторий для helm
-  - helm upgrade --install loki --namespace=loki-stack grafana/loki-stack
-  - helm repo update
+1) Создаем храненилище S3 для ДЗ (преиспользуем хранилище и account c прошлого задания)
 
-3) Устанавливаем требуемое ПО для ДЗ - helm upgrade --values=loki-value.yaml --install loki --namespace=loki-stack grafana/loki-stack --set grafana.enabled=true   
+2) Создайте secret c ключами для доступа к Object Storage - kubectl create -f ./secret.yaml
 
-4) Делаем проброс портов, убеждаемся что логи есть и их можно вывести в grafana
+3) Установите CSI driver (предварительно скачав его с репозитория)
+  - kubectl create -f k8s-csi-s3/deploy/kubernetes/provisioner.yaml
+  - kubectl create -f k8s-csi-s3/deploy/kubernetes/driver.yaml
+  - kubectl create -f k8s-csi-s3/deploy/kubernetes/csi-s3.yaml
 
-5) Удаляем кластер - terraform destroy
+4) Создайте storageClass - kubectl create -f storageclass.yaml
 
-## Grafana
-![image](kubernetes-logging/grafana-img/1.grafana.png)
-![image](kubernetes-logging/grafana-img/2.grafana.png)
+5) Создаем динамический PVC - kubectl create -f pvc-dynamic.yaml
+
+6) Создание pod на основе пример yc - kubectl create -f ./pod-dynamic.yaml
+
+7) Как доп. задание сделал файл deployment.yaml c раскаткай собранного образа на основе openresty - kubectl create -f ./deployment.yaml
+
+## Проверка выполнения ДЗ по скринам
+![image](kubernetes-csi/img/yc.png)
+![image](kubernetes-csi/img/pod-run.png)
+![image](kubernetes-csi/img/test.png)
+![image](kubernetes-csi/img/output-txt-volume.png)
 
 ### Полезные команды
-- Вывод списка кластеров и их статус - yc k8s cluster list
+- Вывод списка кластеров и их статус -
 - Вывод информации о кластере - yc k8s cluster get homework-otus
 
-- Создание временного токена - yc iam create-token
+- Создание временного токена (для подключения terraform к yc) - yc iam create-token
 - Переконфигурация kubectl config
   - yc managed-kubernetes cluster list
   - yc managed-kubernetes cluster get-credentials k8s-cluster-zdll5iec --external --force
-- Пароль от админа grafana - kubectl get secret --namespace loki-stack loki-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-- Проброс портов - kubectl port-forward --namespace loki-stack service/loki-grafana 3000:80
+- Проброс портов - kubectl port-forward nvtikhomirov-otus-5c6987466c-7dfsr 8000:8000
