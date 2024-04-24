@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nvtikhomirov-otus
+  namespace: default
+  labels:
+    app: nvtikhomirov-otus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nvtikhomirov-otus
+  template:
+    metadata:
+      labels:
+        app: nvtikhomirov-otus
+    spec:
+      containers:
+      - name: nvtikhomirov-otus
+        image: nvtikhomirov/openresty-csi:v0.0.2
+        volumeMounts:
+          - mountPath: /usr/share/nginx/html/s3
+            name: webroot
+      volumes:
+        - name: webroot
+          persistentVolumeClaim:
+            claimName: csi-s3-pvc-dynamic
+            readOnly: false
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
