@@ -15,32 +15,26 @@
 
 6) Производим конфигурация Kubectl
 
+7) Производим установку argocd-linux-amd64 (для работы с командной строкой)
+  - export ARGOCD_SERVER=localhost:8080
+  - argocd login localhost:8080 --insecure
+
 
 ## Выполнение домашнего задания
 >Всю конфигурацию для ДЗ производим в соответствии с рекомендациями от YC
 
-1) Создаем храненилище S3 для ДЗ (преиспользуем хранилище и account c прошлого задания)
+1) Добавляем репозиторий с ArgoCD - helm repo add argo https://argoproj.github.io/argo-helm
 
-2) Создайте secret c ключами для доступа к Object Storage - kubectl create -f ./secret.yaml
+2) Разворачиваем ArgoCD в соответствии с ДЗ - helm upgrade --install argocd argo/argo-cd -f ../value.yaml
 
-3) Установите CSI driver (предварительно скачав его с репозитория)
-  - kubectl create -f k8s-csi-s3/deploy/kubernetes/provisioner.yaml
-  - kubectl create -f k8s-csi-s3/deploy/kubernetes/driver.yaml
-  - kubectl create -f k8s-csi-s3/deploy/kubernetes/csi-s3.yaml
+3) Создания проекта otus:
+  - с помощью kubectl - kubectl apply -f ../otusproject-kubectl.yaml
+  - c помощью argocd-cli - argocd proj create -f ../otusproject-argocd.yaml --insecure
 
-4) Создайте storageClass - kubectl create -f storageclass.yaml
-
-5) Создаем динамический PVC - kubectl create -f pvc-dynamic.yaml
-
-6) Создание pod на основе пример yc - kubectl create -f ./pod-dynamic.yaml
-
-7) Как доп. задание сделал файл deployment.yaml c раскаткай собранного образа на основе openresty - kubectl create -f ./deployment.yaml
-
-## Проверка выполнения ДЗ по скринам
-![image](kubernetes-csi/img/yc.png)
-![image](kubernetes-csi/img/pod-run.png)
-![image](kubernetes-csi/img/test.png)
-![image](kubernetes-csi/img/output-txt-volume.png)
+4) Разворачиваем application:
+  - с помощью kubectl - kubectl apply -f ../kubernetes-networks-kubectl.yaml
+  - c помощью argocd-cli - argocd proj create -f ../kubernetes-networks-argocd.yaml --insecure  
+  - с помощью kubectl - kubectl apply -f ../kubernetes-template-kubectl.yaml
 
 ### Полезные команды
 - Вывод списка кластеров и их статус - yc k8s cluster list
@@ -50,4 +44,5 @@
 - Переконфигурация kubectl config
   - yc managed-kubernetes cluster list
   - yc managed-kubernetes cluster get-credentials k8s-cluster-zdll5iec --external --force
-- Проброс портов - kubectl port-forward nvtikhomirov-otus-5c6987466c-7dfsr 8000:8000
+- Проброс портов -  kubectl port-forward service/argocd-server -n default 8080:
+- Пароль для argocd - kubectl -n default get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d

@@ -1,0 +1,26 @@
+metadata:
+  generation: 2
+  managedFields:
+  - apiVersion: argoproj.io/v1alpha1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:spec:
+        .: {}
+        f:description: {}
+        f:destinations: {}
+        f:sourceRepos: {}
+      f:status: {}
+    manager: argocd-server
+    operation: Update
+    time: "2024-05-13T04:45:47Z"
+  name: otus-argocd
+  namespace: default
+spec:
+  description: homework
+  destinations:
+  - name: in-cluster
+    namespace: '*'
+    server: https://kubernetes.default.svc
+  sourceRepos:
+  - https://github.com/Kuber-2023-12OTUS/ntikhomirov_repo.git
+status: {}
