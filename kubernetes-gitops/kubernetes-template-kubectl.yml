@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-templating
+  namespace: default
+spec:
+  project: otus-kubectl
+  source:
+    repoURL: https://github.com/Kuber-2023-12OTUS/ntikhomirov_repo.git
+    targetRevision: HEAD
+    path: 'kubernetes-templating/homework'
+    helm:
+      releaseName: web
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homeworkhelm
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - ApplyOutOfSyncOnly=true
+    - CreateNamespace=true
