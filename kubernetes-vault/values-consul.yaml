@@ -1,0 +1,10 @@
+server:
+  replicas: 3
+client:
+  enabled: true
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+ui:
+  enabled: true
+connectInject:
+  enabled: false
