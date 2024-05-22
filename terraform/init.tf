@@ -63,11 +63,11 @@ module "kube" {
       }
       node_labels = {
         role        = "worker-01"
-        environment = "testing"
+        environment = "dev"
       }
-      node_taints = [
-        "node-role=infra:NoSchedule"
-      ]
+#      node_taints = [
+#        "node-role=infra:NoSchedule"
+#      ]
 
     },
 
@@ -86,7 +86,25 @@ module "kube" {
 
       max_expansion   = 1
       max_unavailable = 1
+    },
+
+    "yc-k8s-ng-03" = {
+      node_memory = 2
+      node_cores = 2
+      disk_size = 30
+      description = "Kubernetes nodes group 03"
+      fixed_scale = {
+        size = 1
+      }
+      node_labels = {
+        role        = "worker-03"
+        environment = "dev"
+      }
+
+      max_expansion   = 1
+      max_unavailable = 1
     }
+
   }
 }
 
