@@ -1,68 +1,47 @@
-# Хранилище секретов для приложения.Vault.
+# Диагностика и отладка кластера и приложений в нем.
 
-**Работы производим YC**
+**Работы производим minikube**
 
 ## Подготовка окружения к ДЗ
-1) Скачиваем и устанавливаем terraform c зеркала яндекс - https://hashicorp-releases.yandexcloud.net/terraform/
-
-2) Устанавливаем необходимые модули для работы terraform c yc
-
-3) Устанавливаем yc для работы с cloud через cli
-
-4) Настраиваем terraform для домашнего задания
-
-5) Производим инициализацию и запуск кластера - terraform init; terraform plan; terraform apply
-
-6) Производим конфигурация Kubectl
-
+1) Удаление старых настроек кластера - minikube delete
+2) Запуск - minikube start
 
 ## Выполнение домашнего задания
->Всю конфигурацию для ДЗ производим в соответствии с рекомендациями от YC
 
-1) Добавляем репозитории git для использования helm:
-  - https://github.com/hashicorp/consul-k8s.git
-  - https://github.com/hashicorp/vault-helm.git
+1) Создаем namespace - kubectl apply -f ./namespace.yaml
 
-2) Создаем файлы конфигурации consul и vault:
-  - values-consul.yaml
-  - values-vault.yaml
+2) Устанавливаем рекомендуемое приложение и создаем сервис к нему - kubectl apply -f ./pod.yaml
 
-3) Применяем последовательно файлы из пункта 2:
-  - helm upgrade --install consul consul-k8s/charts/consul/ --set global.name=consul --create-namespace -n consul -f ./values-consul.yaml
-  - helm install vault vault-helm/ --debug --create-namespace -n vault -f ./values-vault.yaml
+3) Проверяем, что все создалось и поднялось:
+  - kubectl get pod -n homework
+  - kubectl get svc -n homework
+![image](kubernetes-debug/img/pod_all.png)
+![image](kubernetes-debug/img/svc_all.png)  
 
-4) Производим инициализацию, распечатку и запуск vault
-  - kubectl -n vault exec -it vault-0 -- vault operator init
-  - kubectl -n vault exec -it vault-0 -- vault operator unseal <token>
-  - kubectl -n vault exec -it vault-0 -- vault secrets enable -version=2 -path=otus kv
+4) Душа требует утреннего костыля! Собираем свой собственный отладочный образ на основе debian и пушим его в репозитори:
+  - docker build -t docker.nt33.ru/debug/debian:v0.1.0-dev .
+  - docker push docker.nt33.ru/debug/debian:v0.1.0-dev
 
-5) Создания пары username, password
-  - kubectl -n vault exec -it vault-0 -- vault kv put otus/cred username='otus' password='asajkjkahs'
+5) Создаем отладочный контейнер с шареными pid процессами (на основе docker.nt33.ru/debug/debian:v0.1.0-dev) - kubectl debug hw13 -n homework -it --copy-to=hw13-debug --image=docker.nt33.ru/debug/debian:v0.1.0-dev --share-processes
 
-6) Создаем ServiceAccount и ClusterRoleBinding:
-  - kubectl apply -f ./sa.yaml
+6) Командой ps находим pid процесса nginx. В директории /proc/{pid}/root/etc/nginx ls -axl
+![image](kubernetes-debug/img/lsetcngin.png)
 
-7) Включение аутентификации Kubernetes в Vault:
-  - kubectl -n vault exec -it vault-0 -- vault auth enable kubernetes
+7) О слезы, о печаль, в образе отсутствует tcpdump. Пересобираем и пушим(не забываем про новый tag)
 
-8) Настройка конфигурации для аутентификации через ServiceAccount:
-  - kubectl -n vault exec -it vault-0 -- vault write auth/kubernetes/config token_reviewer_jwt=`kubectl -n vault exec -it vault-0 -- cat /var/run/secrets/kubernetes.io/serviceaccount/token` kubernetes_host="https://kubernetes.default.svc" kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+8) Запускаем эфимерный контейнер c образом содержащий tcpdump - kubectl debug hw13 -n homework -it --image=docker.nt33.ru/debug/debian:v0.2.0-dev --share-processes
+![image](kubernetes-debug/img/tcpdump.png)
 
-9) Применяем политику из ДЗ:
-  - cat policy.hcl|kubectl -n vault exec -it vault-0 -- vault policy write otus-policy -
+9) Запускае новый контейнер для доступа к ноде:
+  - Определяем на какой ноде находиться pod - kubectl get pod hw13 -n homework -o wide
+  - Создание - kubectl debug node/minikube -it --image=docker.nt33.ru/debug/debian:v0.2.0-dev -n homework
 
-10) Для создания роли auth/kubernetes/role/otus в Vault с использованием ServiceAccount vault-auth из namespace vault и привязкой политики otus-policy:
-  - kubectl -n vault exec -it vault-0 -- vault write auth/kubernetes/role/otus bound_service_account_names=vault-auth  bound_service_account_namespaces=vault policies=otus-policy ttl=24h
+10) Шок. Если пытаться открыть файл /host/var/log/pods/homework_hw13_061b033a-f9b8-4b91-935d-063afce46700/nginx/2.log, то получаем ошибку - No such file or directory. Делаем ls -axl /host/var/log/pods/homework_hw13_061b033a-f9b8-4b91-935d-063afce46700/nginx/2.log, получаем вывод lrwxrwxrwx 1 root root 165 Jun 19 03:25 /host/var/log/pods/homework_hw13_061b033a-f9b8-4b91-935d-063afce46700/nginx/2.log -> /var/lib/docker/containers/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b-json.log. Это симлинк на директорию /var, но это примонтированная директория /host. Читаем файл - cat /host/var/lib/docker/containers/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b-json.log. Все ок!
+![image](kubernetes-debug/img/debug.log.png)
 
-11) Установите External Secrets Operator из helm-ùарта в namespace
-vault:
-  - helm repo add external-secrets https://charts.external-secrets.io
-  - helm upgrade --install external-secrets external-secrets/external-secrets --create-namespace -n vault
+11) Копирования файла логов - kubectl cp node-debugger-minikube-7865k:/host/var/lib/docker/containers/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b/9cafe34039b16f9d3616d531a4e52b481bd8a74603f79126fda89434f4322e1b-json.log json.log -n homework
 
-12) Создаем SecretStore и ExternalSecret:
-  - kubectl apply -f ./crd-secretstore.yaml
-  - kubectl apply -f ./crd-externalsecret.yaml                
-
-### Полезные команды
-- Проброс портов -  kubectl port-forward service/vault -n vault 8200:8200
-- Просмотр sa - kubectl get sa -n vault
+12) Использование команды strace:
+ - создаем эфимерный контейнер - kubectl debug hw13 -n homework -it --image=docker.nt33.ru/debug/debian:v0.3.0-dev --share-processes --target nginx
+ - подключаемся к процессу по пид - strace -tt -p $(pgrep -f 'nginx: master')
+![image](kubernetes-debug/img/task-2.png)
