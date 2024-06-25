@@ -121,3 +121,30 @@ systemctl daemon-reload
 systemctl restart kubelet
 ```
 ![image](kubernetes-prod/k8s-1.30-update.png)
+
+## Задание со *
+### Подготовка обновляем VM и устанавливаем ansible
+```bash
+#!/bin/#!/usr/bin/env bash
+apt update
+apt install software-properties-common
+add-apt-repository --yes --update ppa:ansible/ansible
+apt install ansible
+ansible --version
+```
+
+Это не сработало!!! (Версия слишком низкая)
+![image](kubernetes-prod/error-kubespray.png)
+
+### Не печалимся! Создаем виртуальное окружение для работы kubespray и устанавливаем ansible
+```
+#!/bin/bash
+apt-get install -y python3-pip python3-venv
+python3 -m venv kubespray
+source kubespray/bin/activate
+git clone https://github.com/kubernetes-sigs/kubespray.git
+pip install -U -r requirements.txt
+ansible-playbook -i inventory/ya-hw14/inventory.ini -u nvtikhomirov --become --become-user=root cluster.yml
+```
+#### Немного магии в вывод:
+![image](kubernetes-prod/magik.png)
