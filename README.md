@@ -148,3 +148,7 @@ ansible-playbook -i inventory/ya-hw14/inventory.ini -u nvtikhomirov --become --b
 ```
 #### Немного магии в вывод:
 ![image](kubernetes-prod/magik.png)
+
+### УПС!!! зря не установил публичный IP yc ))))
+## Заработало!
+![image](kubernetes-prod/kubespray.png)
